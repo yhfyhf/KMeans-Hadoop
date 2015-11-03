@@ -11,9 +11,12 @@ import org.apache.hadoop.mapreduce.lib.input.KeyValueTextInputFormat;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 
-public class UpdateJobRunner
-{
+public class UpdateJobRunner {
+
+    public static ArrayList<Point> C_old = new ArrayList<>();
+
     /**
      * Create a map-reduce job to update the current centroids.
      * @param jobId Some arbitrary number so that Hadoop can create a directory "<outputDirectory>/<jobname>_<jobId>"
@@ -25,11 +28,19 @@ public class UpdateJobRunner
      * @precondition The global centroids variable has been set.
      */
     public static Job createUpdateJob(int jobId, String inputDirectory, String outputDirectory)
-        throws IOException
-    {
-        System.out.println("TODO");
-        System.exit(1);
-        return null;
+        throws IOException {
+        Job update_job = new Job(new Configuration(), "kmeans_job"+jobId);
+        update_job.setJarByClass(KMeans.class);
+        update_job.setMapperClass(PointToClusterMapper.class);
+        update_job.setMapOutputKeyClass(IntWritable.class);
+        update_job.setMapOutputValueClass(Point.class);
+        update_job.setReducerClass(ClusterToPointReducer.class);
+        update_job.setOutputKeyClass(IntWritable.class);
+        update_job.setOutputValueClass(Point.class);
+        FileInputFormat.addInputPath(update_job, new Path(inputDirectory));
+        FileOutputFormat.setOutputPath(update_job, new Path(outputDirectory + "/" + jobId));
+        update_job.setInputFormatClass(KeyValueTextInputFormat.class);
+        return update_job;
     }
 
     /**
@@ -48,10 +59,30 @@ public class UpdateJobRunner
      * @return The number of iterations that were executed.
      */
     public static int runUpdateJobs(int maxIterations, String inputDirectory,
-        String outputDirectory)
-    {
-        System.out.println("TODO");
-        System.exit(1);
-        return 0;
+        String outputDirectory) throws IOException, ClassNotFoundException, InterruptedException {
+        int numIterations = 0;
+
+        boolean converged = false;
+        for (int i = 0; i < maxIterations; i++) {
+            numIterations++;
+            C_old = new ArrayList<>(KMeans.centroids);
+            Job job = createUpdateJob(i, inputDirectory, outputDirectory);
+            job.waitForCompletion(true);
+            converged = converged(C_old, KMeans.centroids);
+            if (converged) {
+                break;
+            }
+        }
+        return numIterations;
+    }
+
+    public static boolean converged(ArrayList<Point> C_old, ArrayList<Point> C_new) {
+        float epsilon = 0.00001F;
+        for (int i = 0; i < C_old.size(); i++) {
+            if (Point.distance(C_old.get(i), C_new.get(i)) > epsilon) {
+                return false;
+            }
+        }
+        return true;
     }
 }
