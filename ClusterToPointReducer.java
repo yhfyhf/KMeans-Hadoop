@@ -4,8 +4,11 @@ import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Reducer;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 
-/** 
+/**
  * You can modify this class as you see fit, as long as you correctly update the
  * global centroids.
  */
