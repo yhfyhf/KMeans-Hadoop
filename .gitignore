@@ -1,12 +1,7 @@
-.idea
-*.jar
-*.class
 .DS_Store
-*.iml
-out/
-.classpath
-.project
-README.*
+*.class
 output/
+*.jar
+sync_to_skeleton2
 centroids
 
